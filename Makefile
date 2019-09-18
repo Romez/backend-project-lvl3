@@ -19,3 +19,6 @@ test-watch:
 
 help:
 	npx babel-node src/bin/page-loader.js -h
+
+run:
+	npx babel-node src/bin/page-loader.js 'http://hexlet.io/courses'

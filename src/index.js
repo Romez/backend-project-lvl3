@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { get } from 'axios';
 
-export default (target, dest) => new Promise((resolve, reject) => {
+export default (target, output) => {
   get(target)
     .then(({ data }) => {
       const fileName = target
@@ -10,13 +10,11 @@ export default (target, dest) => new Promise((resolve, reject) => {
         .replace(/\W/g, '-')
         .concat('.html');
 
-      fs.writeFile(path.join(dest, fileName), data, (err) => {
+      const filePath = path.join(output, fileName);
+      fs.writeFile(filePath, data, (err) => {
         if (err) {
-          reject(err);
+          throw new Error(err);
         }
-
-        resolve();
       });
-    })
-    .catch(reject);
-});
+    });
+};
