@@ -1,3 +1,6 @@
+env:
+  global:
+    CC_TEST_REPORTER_ID_=02a83fd4e0af48eec13c20dc5affeb43719d6913cb0237a0ec141bac68570214
 language: node_js
 
 node_js:
