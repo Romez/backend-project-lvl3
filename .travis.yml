@@ -9,3 +9,7 @@ node_js:
 script:
   - make lint
   - make test
+
+after_script:
+  - ./cc-test-reporter format-coverage -t lcov ./coverage/lcov.info
+  - ./cc-test-reporter -d after-build --exit-code $TRAVIS_TEST_RESULT
