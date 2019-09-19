@@ -1,20 +1,14 @@
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 import { get } from 'axios';
 
-export default (target, output) => {
-  get(target)
-    .then(({ data }) => {
-      const fileName = target
-        .replace(/^https?:\/\//, '')
-        .replace(/\W/g, '-')
-        .concat('.html');
+export default (target, output) => get(target)
+  .then(({ data }) => {
+    const fileName = target
+      .replace(/^https?:\/\//, '')
+      .replace(/\W/g, '-')
+      .concat('.html');
 
-      const filePath = path.join(output, fileName);
-      fs.writeFile(filePath, data, (err) => {
-        if (err) {
-          throw new Error(err);
-        }
-      });
-    });
-};
+    const filePath = path.join(output, fileName);
+    return fs.writeFile(filePath, data);
+  });
