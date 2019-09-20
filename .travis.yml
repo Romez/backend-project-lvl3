@@ -9,7 +9,7 @@ before_script:
   - ./cc-test-reporter before-build
 script:
   - make lint
-  - make test
+  - make coverage
 
 after_script:
   - ./cc-test-reporter format-coverage -t lcov ./coverage/lcov.info

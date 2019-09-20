@@ -1,3 +1,5 @@
+.PHONY: coverage
+
 install:
 	npm install
 
@@ -16,6 +18,9 @@ test:
 
 test-watch:
 	npm run test-watch
+
+coverage:
+	npm run coverage
 
 help:
 	npx babel-node src/bin/page-loader.js -h
