@@ -8,6 +8,6 @@ program
   .description(description)
   .version(version)
   .arguments('<target>')
-  .option('-o, --output [dest]', 'Output directory', __dirname)
+  .option('-o, --output [dest]', 'Output directory', process.cwd())
   .action((target, { output }) => loadPage(target, output))
   .parse(process.argv);
