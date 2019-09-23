@@ -18,6 +18,7 @@ test('page-loader', async () => {
   nock(host).get('/courses').replyWithFile(200, getFixrurePath('index.html'));
   nock(host).get('/assets/inferno.jpg').replyWithFile(200, getFixrurePath('assets/inferno.jpg'));
   nock(host).get('/assets/styles.css').replyWithFile(200, getFixrurePath('assets/styles.css'));
+  nock(host).get('/assets/scripts.js').replyWithFile(200, getFixrurePath('assets/scripts.js'));
 
   await loadPage('http://hexlet.io/courses', tmpdir);
 
@@ -28,5 +29,5 @@ test('page-loader', async () => {
   ]);
 
   expect(result).toMatch(expected);
-  expect(assets).toEqual(['inferno.jpg', 'styles.css']);
+  expect(assets).toEqual(['inferno.jpg', 'scripts.js', 'styles.css']);
 });

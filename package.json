@@ -27,7 +27,8 @@
     "email": "roman.ushakov.899@gmail.com"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testRegex": "/__tests__/.*(test)\\.js$"
   },
   "homepage": "https://github.com/Romez/backend-project-lvl3#readme",
   "dependencies": {

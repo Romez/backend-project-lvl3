@@ -62,7 +62,7 @@ export default (target, output) => get(target)
           .then(() => Promise.all(oldPaths.map((pathname) => {
             const assetUrl = url.format({ ...targetUrl, pathname });
             return get(assetUrl).then((res) => {
-              const assetPath = path.join(assetsPath, 'TTT', path.basename(pathname));
+              const assetPath = path.join(assetsPath, path.basename(pathname));
               return fs.writeFile(assetPath, res.data);
             });
           })));
