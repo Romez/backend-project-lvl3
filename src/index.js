@@ -1,11 +1,12 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import url from 'url';
-import { startsWith, isEmpty } from 'lodash';
+import { startsWith } from 'lodash';
 import { get } from 'axios';
 import cheerio from 'cheerio';
+import debug from 'debug';
 
-const makeDirectoryName = (target) => target.replace(/^https?:\/\//, '').replace(/\W/g, '-');
+const log = debug('page-loader');
 
 const tagsSrcNames = {
   IMG: 'src',
@@ -17,6 +18,8 @@ const isLocalSource = (el) => {
   const srcName = tagsSrcNames[el.prop('tagName')];
   const src = el.attr(srcName);
 
+  log('isLocalSource %s, %s', srcName, src);
+
   if (!src) {
     return false;
   }
@@ -24,47 +27,48 @@ const isLocalSource = (el) => {
   return !startsWith(src, 'http');
 };
 
-const replaceAssets = (html, assetPath) => {
+const replaceLocalSrc = (html, assetPath) => {
   const $ = cheerio.load(html);
 
-  const oldPaths = $('img, link, script')
+  const replacedPaths = $('img, link, script')
     .filter((_, el) => isLocalSource($(el)))
     .map((_, el) => {
       const srcName = tagsSrcNames[$(el).prop('tagName')];
 
-      const oldAttr = $(el).attr(srcName);
-      const newAttr = path.join(assetPath, path.basename(oldAttr));
+      const oldSrc = $(el).attr(srcName);
+      const newSrc = path.join(assetPath, path.basename(oldSrc));
 
-      $(el).attr(srcName, newAttr);
+      $(el).attr(srcName, newSrc);
 
-      return oldAttr;
+      return oldSrc;
     }).toArray();
 
-  return { html: $.html(), oldPaths };
+  log('assetsPaths: %o', replacedPaths);
+  return { html: $.html(), replacedPaths };
 };
 
-export default (target, output) => get(target)
-  .then(({ data }) => {
-    const targetUrl = url.parse(target);
-    const dirName = makeDirectoryName(target);
-    const assetsDir = `/${dirName}_files`;
+export default (target, output) => {
+  const rootDir = target.replace(/^https?:\/\//, '').replace(/\W/g, '-');
+  log('rootDir: %s', rootDir);
 
-    const { html, oldPaths } = replaceAssets(data, assetsDir);
+  const assetsDir = `/${rootDir}_files`;
+  const assetsPath = path.join(output, assetsDir);
+  let paths;
 
-    return fs.writeFile(path.join(output, `${dirName}.html`), html)
-      .then(() => {
-        if (isEmpty(oldPaths)) {
-          return true;
-        }
+  const saveAssetData = ({ request, data }) => {
+    const assetPath = path.join(assetsPath, path.basename(request.path));
+    log('assetPath: %s', assetPath);
+    return fs.writeFile(assetPath, data);
+  };
 
-        const assetsPath = path.join(output, assetsDir);
-        return fs.mkdir(assetsPath)
-          .then(() => Promise.all(oldPaths.map((pathname) => {
-            const assetUrl = url.format({ ...targetUrl, pathname });
-            return get(assetUrl).then((res) => {
-              const assetPath = path.join(assetsPath, path.basename(pathname));
-              return fs.writeFile(assetPath, res.data);
-            });
-          })));
-      });
-  }).then();
+  return get(target)
+    .then(({ data }) => {
+      const { html, replacedPaths } = replaceLocalSrc(data, assetsDir);
+      paths = replacedPaths;
+
+      return fs.writeFile(path.join(output, `${rootDir}.html`), html);
+    })
+    .then(() => fs.mkdir(assetsPath))
+    .then(() => Promise.all(paths.map((pathname) => get(url.resolve(target, pathname)))))
+    .then((results) => Promise.all(results.map(saveAssetData)));
+};
