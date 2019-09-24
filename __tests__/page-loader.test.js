@@ -11,7 +11,7 @@ const host = 'http://hexlet.io';
 let tmpdir;
 
 beforeEach(async () => {
-  tmpdir = await fs.mkdtemp(os.tmpdir());
+  tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
 });
 
 test('page-loader', async () => {
