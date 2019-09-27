@@ -4,7 +4,7 @@ import path from 'path';
 import nock from 'nock';
 import loadPage from '../src';
 
-const getFixrurePath = (fileName) => path.join(__dirname, '__fixtures__', fileName);
+const getFixturesPath = (fileName) => path.join(__dirname, '__fixtures__', fileName);
 
 let tmpdir;
 
@@ -15,18 +15,18 @@ beforeEach(async () => {
 test('page-loader', async () => {
   nock('http://hexlet.io')
     .get('/courses')
-    .replyWithFile(200, getFixrurePath('index.html'))
+    .replyWithFile(200, getFixturesPath('index.html'))
     .get('/assets/inferno.jpg')
-    .replyWithFile(200, getFixrurePath('assets/inferno.jpg'))
+    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
     .get('/assets/styles.css')
-    .replyWithFile(200, getFixrurePath('assets/styles.css'))
+    .replyWithFile(200, getFixturesPath('assets/styles.css'))
     .get('/assets/scripts.js')
-    .replyWithFile(200, getFixrurePath('assets/scripts.js'));
+    .replyWithFile(200, getFixturesPath('assets/scripts.js'));
 
   await loadPage('http://hexlet.io/courses', tmpdir);
 
   const [expected, result, assets] = await Promise.all([
-    fs.readFile(getFixrurePath('result.html'), 'utf8'),
+    fs.readFile(getFixturesPath('result.html'), 'utf8'),
     fs.readFile(path.join(tmpdir, 'hexlet-io-courses.html'), 'utf8'),
     fs.readdir(path.join(tmpdir, 'hexlet-io-courses_files')),
   ]);
