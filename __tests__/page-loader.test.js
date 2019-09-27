@@ -6,8 +6,6 @@ import loadPage from '../src';
 
 const getFixrurePath = (fileName) => path.join(__dirname, '__fixtures__', fileName);
 
-const host = 'http://hexlet.io';
-
 let tmpdir;
 
 beforeEach(async () => {
@@ -15,10 +13,15 @@ beforeEach(async () => {
 });
 
 test('page-loader', async () => {
-  nock(host).get('/courses').replyWithFile(200, getFixrurePath('index.html'));
-  nock(host).get('/assets/inferno.jpg').replyWithFile(200, getFixrurePath('assets/inferno.jpg'));
-  nock(host).get('/assets/styles.css').replyWithFile(200, getFixrurePath('assets/styles.css'));
-  nock(host).get('/assets/scripts.js').replyWithFile(200, getFixrurePath('assets/scripts.js'));
+  nock('http://hexlet.io')
+    .get('/courses')
+    .replyWithFile(200, getFixrurePath('index.html'))
+    .get('/assets/inferno.jpg')
+    .replyWithFile(200, getFixrurePath('assets/inferno.jpg'))
+    .get('/assets/styles.css')
+    .replyWithFile(200, getFixrurePath('assets/styles.css'))
+    .get('/assets/scripts.js')
+    .replyWithFile(200, getFixrurePath('assets/scripts.js'));
 
   await loadPage('http://hexlet.io/courses', tmpdir);
 
