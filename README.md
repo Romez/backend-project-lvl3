@@ -14,3 +14,8 @@
 * Save page localy: `page-loader http://hexlet.io/courses -o /var/tmp`
 
 [![asciicast](https://asciinema.org/a/269803.svg)](https://asciinema.org/a/269803)
+
+### Test
+`make test`
+
+[![asciicast](https://asciinema.org/a/271435.svg)](https://asciinema.org/a/271435)

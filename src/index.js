@@ -18,8 +18,6 @@ const isLocalSource = (el) => {
   const srcName = tagsSrcNames[el.prop('tagName')];
   const src = el.attr(srcName);
 
-  log('isLocalSource %s, %s', srcName, src);
-
   if (!src) {
     return false;
   }
@@ -43,7 +41,6 @@ const replaceLocalSrc = (html, assetPath) => {
       return oldSrc;
     }).toArray();
 
-  log('assetsPaths: %o', replacedPaths);
   return { html: $.html(), replacedPaths };
 };
 
@@ -55,20 +52,20 @@ export default (target, output) => {
   const assetsPath = path.join(output, assetsDir);
   let paths;
 
-  const saveAssetData = ({ request, data }) => {
-    const assetPath = path.join(assetsPath, path.basename(request.path));
-    log('assetPath: %s', assetPath);
-    return fs.writeFile(assetPath, data);
-  };
-
   return get(target)
     .then(({ data }) => {
       const { html, replacedPaths } = replaceLocalSrc(data, assetsDir);
       paths = replacedPaths;
-
+      log('replacedPaths: %o', replacedPaths);
       return fs.writeFile(path.join(output, `${rootDir}.html`), html);
     })
     .then(() => fs.mkdir(assetsPath))
-    .then(() => Promise.all(paths.map((pathname) => get(url.resolve(target, pathname)))))
-    .then((results) => Promise.all(results.map(saveAssetData)));
+    .then(() => {
+      const promises = paths.map((pathname) => get(url.resolve(target, pathname)));
+      return Promise.all(promises);
+    })
+    .then((results) => Promise.all(results.map(({ request, data }) => {
+      const assetPath = path.join(assetsPath, path.basename(request.path));
+      return fs.writeFile(assetPath, data);
+    })));
 };
