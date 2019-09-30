@@ -7,13 +7,14 @@ import loadPage from '../src';
 const getFixturesPath = (fileName) => path.join(__dirname, '__fixtures__', fileName);
 
 let tmpdir;
+const host = 'http://hexlet.io';
 
 beforeEach(async () => {
   tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
 });
 
 test('page-loader', async () => {
-  nock('http://hexlet.io')
+  nock(host)
     .get('/courses')
     .replyWithFile(200, getFixturesPath('index.html'))
     .get('/assets/inferno.jpg')
@@ -23,7 +24,7 @@ test('page-loader', async () => {
     .get('/assets/scripts.js')
     .replyWithFile(200, getFixturesPath('assets/scripts.js'));
 
-  await loadPage('http://hexlet.io/courses', tmpdir);
+  await loadPage(`${host}/courses`, tmpdir);
 
   const [expected, result, assets] = await Promise.all([
     fs.readFile(getFixturesPath('result.html'), 'utf8'),
@@ -33,4 +34,10 @@ test('page-loader', async () => {
 
   expect(result).toMatch(expected);
   expect(assets).toEqual(['inferno.jpg', 'scripts.js', 'styles.css']);
+});
+
+test('target_is_not_found', async () => {
+  nock(host).get('/courses').reply(404);
+
+  await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
 });
