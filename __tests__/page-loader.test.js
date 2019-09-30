@@ -41,3 +41,17 @@ test('target_is_not_found', async () => {
 
   await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
 });
+
+test('resources_error', async () => {
+  nock(host)
+    .get('/courses')
+    .replyWithFile(200, getFixturesPath('index.html'))
+    .get('/assets/inferno.jpg')
+    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
+    .get('/assets/styles.css')
+    .replyWithFile(200, getFixturesPath('assets/styles.css'))
+    .get('/assets/scripts.js')
+    .reply(404);
+
+  await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
+});
