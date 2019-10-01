@@ -60,12 +60,9 @@ export default (target, output) => {
       return fs.writeFile(path.join(output, `${rootDir}.html`), html);
     })
     .then(() => fs.mkdir(assetsPath))
-    .then(() => {
-      const promises = paths.map((pathname) => get(url.resolve(target, pathname)));
-      return Promise.all(promises);
-    })
-    .then((results) => Promise.all(results.map(({ request, data }) => {
-      const assetPath = path.join(assetsPath, path.basename(request.path));
-      return fs.writeFile(assetPath, data);
-    })));
+    .then(() => Promise.all(paths.map((pathname) => get(url.resolve(target, pathname))
+      .then(({ request, data }) => {
+        const filename = path.basename(request.path);
+        return fs.writeFile(path.join(assetsPath, filename), data);
+      }))));
 };

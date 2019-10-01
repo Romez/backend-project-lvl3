@@ -56,32 +56,26 @@ test('resources_error', async () => {
   await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
 });
 
-test('output_error', async () => {
-  nock(host)
-    .get('/courses')
-    .replyWithFile(200, getFixturesPath('index.html'))
-    .get('/assets/inferno.jpg')
-    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
-    .get('/assets/styles.css')
-    .replyWithFile(200, getFixturesPath('assets/styles.css'))
-    .get('/assets/scripts.js')
-    .replyWithFile(200, getFixturesPath('assets/scripts.js'));
+describe('files_errors', () => {
+  beforeEach(() => {
+    nock(host)
+      .get('/courses')
+      .replyWithFile(200, getFixturesPath('index.html'))
+      .get('/assets/inferno.jpg')
+      .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
+      .get('/assets/styles.css')
+      .replyWithFile(200, getFixturesPath('assets/styles.css'))
+      .get('/assets/scripts.js')
+      .replyWithFile(200, getFixturesPath('assets/scripts.js'));
+  });
 
-  await expect(loadPage(`${host}/courses`, '/undefined')).rejects.toThrow();
-});
+  test('output_error', async () => {
+    await expect(loadPage(`${host}/courses`, '/undefined')).rejects.toThrow();
+  });
 
-test('permissions_error', async () => {
-  nock(host)
-    .get('/courses')
-    .replyWithFile(200, getFixturesPath('index.html'))
-    .get('/assets/inferno.jpg')
-    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
-    .get('/assets/styles.css')
-    .replyWithFile(200, getFixturesPath('assets/styles.css'))
-    .get('/assets/scripts.js')
-    .replyWithFile(200, getFixturesPath('assets/scripts.js'));
+  test('permissions_error', async () => {
+    await fs.chmod(tmpdir, 0o400);
 
-  await fs.chmod(tmpdir, 0o400);
-
-  await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
+    await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
+  });
 });

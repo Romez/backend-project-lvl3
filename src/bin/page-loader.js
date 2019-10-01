@@ -9,5 +9,5 @@ program
   .version(version)
   .arguments('<target>')
   .option('-o, --output [dest]', 'Output directory', process.cwd())
-  .action((target, { output }) => loadPage(target, output))
+  .action((target, { output }) => loadPage(target, output).catch(console.error))
   .parse(process.argv);
