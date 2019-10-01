@@ -50,19 +50,24 @@ export default (target, output) => {
 
   const assetsDir = `/${rootDir}_files`;
   const assetsPath = path.join(output, assetsDir);
-  let paths;
+  log('assetsPath: %s', assetsPath);
 
   return get(target)
+    .catch((data) => {
+      throw new Error(`${data.message} ${target}`);
+    })
     .then(({ data }) => {
       const { html, replacedPaths } = replaceLocalSrc(data, assetsDir);
-      paths = replacedPaths;
       log('replacedPaths: %o', replacedPaths);
-      return fs.writeFile(path.join(output, `${rootDir}.html`), html);
+
+      return fs.writeFile(path.join(output, `${rootDir}.html`), html)
+        .then(() => (replacedPaths.length > 0 && fs.mkdir(assetsPath)))
+        .then(() => replacedPaths);
     })
-    .then(() => fs.mkdir(assetsPath))
-    .then(() => Promise.all(paths.map((pathname) => get(url.resolve(target, pathname))
-      .then(({ request, data }) => {
-        const filename = path.basename(request.path);
-        return fs.writeFile(path.join(assetsPath, filename), data);
-      }))));
+    .then((paths) => Promise.all(paths.map((resourcePath) => {
+      const resourceUrl = url.resolve(target, resourcePath);
+      const resourceFilePath = path.join(assetsPath, path.basename(resourcePath));
+
+      return get(resourceUrl).then(({ data }) => fs.writeFile(resourceFilePath, data));
+    })));
 };

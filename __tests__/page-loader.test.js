@@ -13,50 +13,30 @@ beforeEach(async () => {
   tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
 });
 
-test('page-loader', async () => {
-  nock(host)
-    .get('/courses')
-    .replyWithFile(200, getFixturesPath('index.html'))
-    .get('/assets/inferno.jpg')
-    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
-    .get('/assets/styles.css')
-    .replyWithFile(200, getFixturesPath('assets/styles.css'))
-    .get('/assets/scripts.js')
-    .replyWithFile(200, getFixturesPath('assets/scripts.js'));
+describe('check_resources', async () => {
+  test('target_is_not_found', async () => {
+    nock(host).get('/courses').reply(404);
 
-  await loadPage(`${host}/courses`, tmpdir);
+    await expect(loadPage(`${host}/courses`, tmpdir))
+      .rejects.toThrow('Request failed with status code 404 http://hexlet.io/courses');
+  });
 
-  const [expected, result, assets] = await Promise.all([
-    fs.readFile(getFixturesPath('result.html'), 'utf8'),
-    fs.readFile(path.join(tmpdir, 'hexlet-io-courses.html'), 'utf8'),
-    fs.readdir(path.join(tmpdir, 'hexlet-io-courses_files')),
-  ]);
+  test('assets_not_available', async () => {
+    nock(host)
+      .get('/courses')
+      .replyWithFile(200, getFixturesPath('index.html'))
+      .get('/assets/inferno.jpg')
+      .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
+      .get('/assets/styles.css')
+      .replyWithFile(200, getFixturesPath('assets/styles.css'))
+      .get('/assets/scripts.js')
+      .reply(404);
 
-  expect(result).toMatch(expected);
-  expect(assets).toEqual(['inferno.jpg', 'scripts.js', 'styles.css']);
+    await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
+  });
 });
 
-test('target_is_not_found', async () => {
-  nock(host).get('/courses').reply(404);
-
-  await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
-});
-
-test('resources_error', async () => {
-  nock(host)
-    .get('/courses')
-    .replyWithFile(200, getFixturesPath('index.html'))
-    .get('/assets/inferno.jpg')
-    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
-    .get('/assets/styles.css')
-    .replyWithFile(200, getFixturesPath('assets/styles.css'))
-    .get('/assets/scripts.js')
-    .reply(404);
-
-  await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
-});
-
-describe('files_errors', () => {
+describe('check_files', () => {
   beforeEach(() => {
     nock(host)
       .get('/courses')
@@ -69,13 +49,25 @@ describe('files_errors', () => {
       .replyWithFile(200, getFixturesPath('assets/scripts.js'));
   });
 
+  test('page-loader', async () => {
+    await loadPage(`${host}/courses`, tmpdir);
+
+    const [expected, result, assets] = await Promise.all([
+      fs.readFile(getFixturesPath('result.html'), 'utf8'),
+      fs.readFile(path.join(tmpdir, 'hexlet-io-courses.html'), 'utf8'),
+      fs.readdir(path.join(tmpdir, 'hexlet-io-courses_files')),
+    ]);
+
+    expect(result).toMatch(expected);
+    expect(assets).toEqual(['inferno.jpg', 'scripts.js', 'styles.css']);
+  });
+
   test('output_error', async () => {
     await expect(loadPage(`${host}/courses`, '/undefined')).rejects.toThrow();
   });
 
   test('permissions_error', async () => {
     await fs.chmod(tmpdir, 0o400);
-
     await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
   });
 });
