@@ -68,6 +68,10 @@ export default (target, output) => {
       const resourceUrl = url.resolve(target, resourcePath);
       const resourceFilePath = path.join(assetsPath, path.basename(resourcePath));
 
-      return get(resourceUrl).then(({ data }) => fs.writeFile(resourceFilePath, data));
+      return get(resourceUrl)
+        .catch((data) => {
+          throw new Error(`${data.message} ${resourceUrl}`);
+        })
+        .then(({ data }) => fs.writeFile(resourceFilePath, data));
     })));
 };

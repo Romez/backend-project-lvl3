@@ -13,7 +13,7 @@ beforeEach(async () => {
   tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
 });
 
-describe('check_resources', async () => {
+describe('check_resources', () => {
   test('target_is_not_found', async () => {
     nock(host).get('/courses').reply(404);
 
@@ -30,9 +30,10 @@ describe('check_resources', async () => {
       .get('/assets/styles.css')
       .replyWithFile(200, getFixturesPath('assets/styles.css'))
       .get('/assets/scripts.js')
-      .reply(404);
+      .reply(403);
 
-    await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
+    await expect(loadPage(`${host}/courses`, tmpdir))
+      .rejects.toThrow('Request failed with status code 403 http://hexlet.io/assets/scripts.js');
   });
 });
 
