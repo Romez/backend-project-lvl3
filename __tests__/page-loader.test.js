@@ -64,11 +64,12 @@ describe('check_files', () => {
   });
 
   test('output_error', async () => {
-    await expect(loadPage(`${host}/courses`, '/undefined')).rejects.toThrow();
+    await expect(loadPage(`${host}/courses`, '/undefined'))
+      .rejects.toThrow('/undefined');
   });
 
   test('permissions_error', async () => {
     await fs.chmod(tmpdir, 0o400);
-    await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow();
+    await expect(loadPage(`${host}/courses`, tmpdir)).rejects.toThrow(tmpdir);
   });
 });
