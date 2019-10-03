@@ -44,13 +44,17 @@ const replaceLocalSrc = (html, assetPath) => {
   return { html: $.html(), replacedPaths };
 };
 
+const makeResourceName = (resourceUrl) => resourceUrl.replace(/^https?:\/\//, '').replace(/\W/g, '-');
+
 export default (target, output) => {
-  const rootDir = target.replace(/^https?:\/\//, '').replace(/\W/g, '-');
+  const rootDir = makeResourceName(target);
   log('rootDir: %s', rootDir);
 
   const assetsDir = `/${rootDir}_files`;
   const assetsPath = path.join(output, assetsDir);
   log('assetsPath: %s', assetsPath);
+
+  let paths;
 
   return get(target)
     .catch((data) => {
@@ -60,18 +64,20 @@ export default (target, output) => {
       const { html, replacedPaths } = replaceLocalSrc(data, assetsDir);
       log('replacedPaths: %o', replacedPaths);
 
-      return fs.writeFile(path.join(output, `${rootDir}.html`), html)
-        .then(() => (replacedPaths.length > 0 && fs.mkdir(assetsPath)))
-        .then(() => replacedPaths);
-    })
-    .then((paths) => Promise.all(paths.map((resourcePath) => {
-      const resourceUrl = url.resolve(target, resourcePath);
-      const resourceFilePath = path.join(assetsPath, path.basename(resourcePath));
+      paths = replacedPaths;
 
-      return get(resourceUrl)
-        .catch((data) => {
-          throw new Error(`${data.message} ${resourceUrl}`);
-        })
-        .then(({ data }) => fs.writeFile(resourceFilePath, data));
-    })));
+      return fs.writeFile(path.join(output, `${rootDir}.html`), html);
+    })
+    .then(() => paths.length > 0 && fs.mkdir(assetsPath))
+    .then(() => Promise.all(paths.map((resourcePath) => get(url.resolve(target, resourcePath)))))
+  // .catch((data) => {
+  // console.log('data: ', data)
+  // throw new Error(`${data.message} ${resourceUrl}`);
+  // })
+    .then(({ request, data }) => {
+      console.log(request)
+      // const resourceFilePath = path.join(assetsPath, path.basename(resourcePath));
+      // return fs.writeFile(resourceFilePath, data);
+    });
+  ;
 };
