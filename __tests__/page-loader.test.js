@@ -60,7 +60,7 @@ describe('check_files', () => {
     ]);
 
     expect(result).toMatch(expected);
-    expect(assets).toEqual(['inferno.jpg', 'scripts.js', 'styles.css']);
+    expect(assets).toEqual(['assets-inferno.jpg', 'assets-scripts.js', 'assets-styles.css']);
   });
 
   test('output_error', async () => {

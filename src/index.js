@@ -25,6 +25,21 @@ const isLocalSource = (el) => {
   return !startsWith(src, 'http');
 };
 
+const makeResourceName = (target) => {
+  if (startsWith(target, 'http')) {
+    return target
+      .replace(/^https?:\/\//, '')
+      .replace(/\W/g, '-');
+  }
+
+  const ext = path.extname(target);
+  return target
+    .replace(/^\//, '')
+    .replace(ext, '')
+    .replace(/\W/g, '-')
+    .concat(ext);
+};
+
 const replaceLocalSrc = (html, assetPath) => {
   const $ = cheerio.load(html);
 
@@ -34,7 +49,7 @@ const replaceLocalSrc = (html, assetPath) => {
       const srcName = tagsSrcNames[$(el).prop('tagName')];
 
       const oldSrc = $(el).attr(srcName);
-      const newSrc = path.join(assetPath, path.basename(oldSrc));
+      const newSrc = path.join(assetPath, makeResourceName(oldSrc));
 
       $(el).attr(srcName, newSrc);
 
@@ -44,7 +59,6 @@ const replaceLocalSrc = (html, assetPath) => {
   return { html: $.html(), replacedPaths };
 };
 
-const makeResourceName = (resourceUrl) => resourceUrl.replace(/^https?:\/\//, '').replace(/\W/g, '-');
 
 export default (target, output) => {
   const rootDir = makeResourceName(target);
@@ -69,15 +83,17 @@ export default (target, output) => {
       return fs.writeFile(path.join(output, `${rootDir}.html`), html);
     })
     .then(() => paths.length > 0 && fs.mkdir(assetsPath))
-    .then(() => Promise.all(paths.map((resourcePath) => get(url.resolve(target, resourcePath)))))
-  // .catch((data) => {
-  // console.log('data: ', data)
-  // throw new Error(`${data.message} ${resourceUrl}`);
-  // })
-    .then(({ request, data }) => {
-      console.log(request)
-      // const resourceFilePath = path.join(assetsPath, path.basename(resourcePath));
-      // return fs.writeFile(resourceFilePath, data);
+    .then(() => Promise.all(paths.map((resourcePath) => {
+      const assetUrl = url.resolve(target, resourcePath);
+      return get(assetUrl).catch((err) => {
+        throw new Error(`${err.message} ${assetUrl}`);
+      });
+    })))
+    .then((results) => {
+      return Promise.all(results.map(({ request, data }) => {
+        const resourceFilePath = path.join(assetsPath, path.basename(makeResourceName(request.path)));
+        return fs.writeFile(resourceFilePath, data);
+      }));
     });
   ;
 };
