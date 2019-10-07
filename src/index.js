@@ -59,6 +59,9 @@ const replaceLocalSrc = (html, assetPath) => {
   return { html: $.html(), replacedPaths };
 };
 
+const saveAsset = (target, output) => get(target).catch((data) => {
+  throw new Error(`${data.message} ${target}`);
+}).then(({ data }) => fs.writeFile(output, data));
 
 export default (target, output) => {
   const rootDir = makeResourceName(target);
@@ -83,17 +86,13 @@ export default (target, output) => {
       return fs.writeFile(path.join(output, `${rootDir}.html`), html);
     })
     .then(() => paths.length > 0 && fs.mkdir(assetsPath))
-    .then(() => Promise.all(paths.map((resourcePath) => {
-      const assetUrl = url.resolve(target, resourcePath);
-      return get(assetUrl).catch((err) => {
-        throw new Error(`${err.message} ${assetUrl}`);
+    .then(() => {
+      const promises = paths.map((resourcePath) => {
+        const resourceFilePath = path.join(assetsPath, makeResourceName(resourcePath));
+        const assetUrl = url.resolve(target, resourcePath);
+        return saveAsset(assetUrl, resourceFilePath);
       });
-    })))
-    .then((results) => {
-      return Promise.all(results.map(({ request, data }) => {
-        const resourceFilePath = path.join(assetsPath, path.basename(makeResourceName(request.path)));
-        return fs.writeFile(resourceFilePath, data);
-      }));
+
+      return Promise.all(promises);
     });
-  ;
 };
