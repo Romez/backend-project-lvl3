@@ -19,11 +19,11 @@ const isLocalSource = (el) => {
   const srcName = tagsSrcNames[el.prop('tagName')];
   const src = el.attr(srcName);
 
-  if (!src) {
+  if (!src || startsWith(src, 'http') || !startsWith(src, '/')) {
     return false;
   }
 
-  return !startsWith(src, 'http');
+  return true;
 };
 
 const makeResourceName = (target) => {
@@ -85,11 +85,12 @@ export default (target, output) => {
           }).then(({ data }) => {
             const assetOutput = path.join(output, assetsDir, makeResourceName(resourcePath));
             log('asset output %s', assetOutput);
+
             results = results.concat({ output: assetOutput, data });
           });
 
           return { title: assetUrl, task };
-        }));
+        }), { concurrent: true });
       }),
     },
   ]);
