@@ -11,9 +11,15 @@ const host = 'http://hexlet.io';
 
 beforeEach(async () => {
   tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
+
+  nock(host)
+    .get('/assets/inferno.jpg')
+    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
+    .get('/assets/styles.css')
+    .replyWithFile(200, getFixturesPath('assets/styles.css'));
 });
 
-test('target_is_not_found', async () => {
+test('target_shoud_be_not_found', async () => {
   nock(host).get('/courses').reply(404);
 
   await expect(loadPage(`${host}/courses`, tmpdir))
@@ -24,10 +30,6 @@ test('assets_not_available', async () => {
   nock(host)
     .get('/courses')
     .replyWithFile(200, getFixturesPath('index.html'))
-    .get('/assets/inferno.jpg')
-    .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
-    .get('/assets/styles.css')
-    .replyWithFile(200, getFixturesPath('assets/styles.css'))
     .get('/assets/scripts.js')
     .reply(403);
 
@@ -40,10 +42,6 @@ describe('check_files', () => {
     nock(host)
       .get('/courses')
       .replyWithFile(200, getFixturesPath('index.html'))
-      .get('/assets/inferno.jpg')
-      .replyWithFile(200, getFixturesPath('assets/inferno.jpg'))
-      .get('/assets/styles.css')
-      .replyWithFile(200, getFixturesPath('assets/styles.css'))
       .get('/assets/scripts.js')
       .replyWithFile(200, getFixturesPath('assets/scripts.js'));
   });
