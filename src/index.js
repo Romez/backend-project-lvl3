@@ -1,4 +1,4 @@
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 import url from 'url';
 import { startsWith } from 'lodash';
@@ -6,6 +6,8 @@ import { get } from 'axios';
 import cheerio from 'cheerio';
 import debug from 'debug';
 import Listr from 'listr';
+
+const fsPromises = fs.promises;
 
 const log = debug('page-loader');
 
@@ -61,41 +63,58 @@ const replaceLocalSrc = (html, assetPath) => {
 };
 
 export default (target, output) => {
-  const rootDir = makeResourceName(target);
-  log('rootDir: %s', rootDir);
-
-  const assetsDir = `/${rootDir}_files`;
-  let results = [];
-
   const targetTask = new Listr([
     {
       title: target,
-      task: () => get(target).catch((data) => {
-        throw new Error(`${data.message} ${target}`);
-      }).then((targetRes) => {
-        const { html, replacedPaths } = replaceLocalSrc(targetRes.data, assetsDir);
+      task: () => {
+        const rootDir = makeResourceName(target);
+        log('rootDir: %s', rootDir);
 
-        results = results.concat({ output: path.join(output, `${rootDir}.html`), data: html });
+        const assetsDir = `${rootDir}_files`;
 
-        return new Listr(replacedPaths.map((resourcePath) => {
-          const assetUrl = url.resolve(target, resourcePath);
+        let replacedAssets = [];
 
-          const task = () => get(assetUrl).catch((data) => {
-            throw new Error(`${data.message} ${assetUrl}`);
-          }).then(({ data }) => {
-            const assetOutput = path.join(output, assetsDir, makeResourceName(resourcePath));
-            log('asset output %s', assetOutput);
+        return get(target)
+          .catch(({ message }) => {
+            throw new Error(`${message} ${target}`);
+          })
+          .then((targetResponse) => {
+            const { html, replacedPaths } = replaceLocalSrc(targetResponse.data, assetsDir);
+            replacedAssets = replacedPaths;
 
-            results = results.concat({ output: assetOutput, data });
+            return fsPromises.writeFile(path.join(output, `${rootDir}.html`), html);
+          })
+          .then(() => replacedAssets.length > 0 && fsPromises.mkdir(path.join(output, assetsDir)))
+          .then(() => {
+            const assets = replacedAssets.map((assetPath) => {
+              const assetUrl = url.resolve(target, assetPath);
+
+              return {
+                title: assetUrl,
+                task: () => {
+                  const assetOutput = path.join(output, assetsDir, makeResourceName(assetPath));
+                  const assetWriter = fs.createWriteStream(assetOutput);
+                  log('asset output %s', assetOutput);
+
+                  return get(assetUrl, { responseType: 'stream' })
+                    .catch(({ message }) => {
+                      throw new Error(`${message} ${assetUrl}`);
+                    })
+                    .then((assetResponse) => new Promise((resolve, reject) => {
+                      assetResponse.data.pipe(assetWriter);
+
+                      assetWriter.on('finish', resolve);
+                      assetWriter.on('error', reject);
+                    }));
+                },
+              };
+            });
+
+            return new Listr(assets, { concurrent: true });
           });
-
-          return { title: assetUrl, task };
-        }), { concurrent: true });
-      }),
+      },
     },
   ]);
 
-  return targetTask.run()
-    .then(() => results.length > 0 && fs.mkdir(path.join(output, assetsDir)))
-    .then(() => Promise.all(results.map((asset) => fs.writeFile(asset.output, asset.data))));
+  return targetTask.run();
 };
