@@ -15,7 +15,10 @@
 
 [![asciicast](https://asciinema.org/a/269803.svg)](https://asciinema.org/a/269803)
 
-### Test
+### Test runnig
 `make test`
 
 [![asciicast](https://asciinema.org/a/271435.svg)](https://asciinema.org/a/271435)
+
+### Parallel assets loading
+[![asciicast](https://asciinema.org/a/273491.svg)](https://asciinema.org/a/273491)
