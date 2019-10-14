@@ -9,8 +9,12 @@ program
   .version(version)
   .arguments('<target>')
   .option('-o, --output [dest]', 'Output directory', process.cwd())
-  .action((target, { output }) => loadPage(target, output).catch((err) => {
-    console.error(err);
-    process.exit(1);
-  }))
+  .action((target, { output }) => loadPage(target, output)
+    .then(() => {
+      console.log(target);
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    }))
   .parse(process.argv);
