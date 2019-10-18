@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import nock from 'nock';
-import loadPage, { makeFileName } from '../src';
+import loadPage from '../src';
 
 const getFixturesPath = (fileName) => path.join(__dirname, '__fixtures__', fileName);
 
@@ -13,24 +13,24 @@ beforeEach(async () => {
   tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), '/'));
 });
 
-const targetsSet = [
-  ['http://hexlet.io/courses', 'hexlet-io-courses.html'],
-  ['http://hexlet.io/courses/', 'hexlet-io-courses.html'],
-];
-
-test.each(targetsSet)('should_make_valid_name from "%s" to "%s"', (target, result) => {
-  expect(makeFileName(target)).toBe(result);
-});
-
-test('should_save_page', async () => {
-  nock(host).get('/courses').replyWithFile(200, getFixturesPath('index.html'));
+test('should_save_page_and_assets', async () => {
+  nock(host).get('/courses')
+    .replyWithFile(200, getFixturesPath('index.html'))
+    .get('/assets/img.jpg')
+    .replyWithFile(200, getFixturesPath('img.jpeg'))
+    .get('/assets/index.js')
+    .replyWithFile(200, getFixturesPath('index.js'))
+    .get('/assets/styles.css')
+    .replyWithFile(200, getFixturesPath('styles.css'));
 
   await loadPage(`${host}/courses`, tmpdir);
 
-  const [expected, result] = await Promise.all([
-    fs.readFile(getFixturesPath('index.html'), 'utf8'),
+  const [expected, result, assets] = await Promise.all([
+    fs.readFile(getFixturesPath('result.html'), 'utf8'),
     fs.readFile(path.join(tmpdir, 'hexlet-io-courses.html'), 'utf8'),
+    fs.readdir(path.join(tmpdir, 'hexlet-io-courses_files')),
   ]);
 
   expect(result).toMatch(expected);
+  expect(assets).toEqual(['assets-img.jpg', 'assets-index.js', 'assets-styles.css']);
 });
