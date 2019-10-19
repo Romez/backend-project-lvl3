@@ -24,7 +24,6 @@ const makeAssetName = (target) => {
 const isLocal = /^((?!data|http).*)/gi;
 
 const attrNames = { link: 'href', img: 'src', script: 'src' };
-
 const replaceAssets = (html, baseName) => {
   const $ = cheerio.load(html);
 
@@ -55,7 +54,8 @@ export default (target, output) => {
   const assetsPath = path.join(output, `${baseName}_files`);
   let pathnames = [];
 
-  return axios.get(target)
+  return axios
+    .get(target)
     .then((response) => {
       const filepath = path.resolve(output, `${baseName}.html`);
 
@@ -68,6 +68,7 @@ export default (target, output) => {
     .then(() => {
       const urls = pathnames.map((pathname) => url.resolve(target, pathname));
       const promises = urls.map((assetUrl) => axios.get(assetUrl));
+
       return Promise.all(promises);
     })
     .then((responses) => {

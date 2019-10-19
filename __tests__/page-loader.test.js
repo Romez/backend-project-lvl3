@@ -14,7 +14,8 @@ beforeEach(async () => {
 });
 
 test('should_save_page_and_assets', async () => {
-  nock(host).get('/courses')
+  nock(host)
+    .get('/courses')
     .replyWithFile(200, getFixturesPath('index.html'))
     .get('/assets/img.jpg')
     .replyWithFile(200, getFixturesPath('img.jpeg'))
