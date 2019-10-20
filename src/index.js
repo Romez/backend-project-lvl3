@@ -64,6 +64,7 @@ export default (target, output) => {
 
   return axios
     .get(target)
+    .catch(({ message, code }) => { throw new Error(`${target} ${message} ${code}`); })
     .then(({ data }) => {
       const result = replaceAssets(data, `${baseName}_files`);
       assets = result.assets;
