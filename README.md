@@ -19,10 +19,5 @@
 ### Step 2
 [![asciicast](https://asciinema.org/a/275821.svg)](https://asciinema.org/a/275821)
 
-### Test runnig
-`make test`
-
-[![asciicast](https://asciinema.org/a/271435.svg)](https://asciinema.org/a/271435)
-
-### Parallel assets loading
-[![asciicast](https://asciinema.org/a/273491.svg)](https://asciinema.org/a/273491)
+### Step 3
+[![asciicast](https://asciinema.org/a/275834.svg)](https://asciinema.org/a/275834)
