@@ -2,10 +2,10 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import url from 'url';
 import axios from 'axios';
-import { trim, flow } from 'lodash';
+import { trim, flow, isEmpty } from 'lodash';
 import cheerio from 'cheerio';
 
-export const makeFileName = flow(
+export const makePageFilename = flow(
   url.parse,
   ({ hostname, pathname }) => `${hostname}${pathname}`,
   (value) => trim(value, '/'),
@@ -21,62 +21,55 @@ const makeAssetName = (target) => {
     .concat(ext);
 };
 
-const isLocal = /^((?!data|http).*)/gi;
+const isLocal = (target) => {
+  const reg = new RegExp('(?:^[a-z][a-z0-9+.-]*:|//)', 'i');
+  return !reg.test(target);
+};
 
-const attrNames = { link: 'href', img: 'src', script: 'src' };
-const replaceAssets = (html, baseName) => {
+const attributes = { link: 'href', img: 'src', script: 'src' };
+
+const replaceAssets = (html, assetsPath) => {
   const $ = cheerio.load(html);
 
-  const replacedPaths = [];
+  const assets = $('img, link, script')
+    .toArray()
+    .reduce((acc, el) => {
+      const attrubute = attributes[el.name];
+      const oldValue = el.attribs[attrubute];
 
-  $('img, link, script')
-    .filter((_, el) => {
-      const val = $(el).prop(attrNames[el.tagName]);
-      // console.log(val)
-      return isLocal.test(val);
-    })
-    .each((id, el) => {
-      const attrName = attrNames[el.tagName];
-      const oldVal = $(el).prop(attrName);
+      if (!oldValue || !isLocal(oldValue)) {
+        return acc;
+      }
 
-      const newVal = path.join(`${baseName}_files`, makeAssetName(oldVal));
-      // console.log(newVal)
-      $(el).attr(attrName, newVal);
+      const newValue = path.join(assetsPath, makeAssetName(oldValue));
 
-      replacedPaths[id] = oldVal;
-    });
+      $(el).attr(attrubute, newValue);
 
-  return [$.html(), replacedPaths];
+      return acc.concat(oldValue);
+    }, []);
+
+  return { html: $.html(), assets };
 };
 
 export default (target, output) => {
-  const baseName = makeFileName(target);
+  const baseName = makePageFilename(target);
+  const htmlFilePath = path.resolve(output, `${baseName}.html`);
   const assetsPath = path.join(output, `${baseName}_files`);
-  let pathnames = [];
+  let assets = [];
 
   return axios
     .get(target)
-    .then((response) => {
-      const filepath = path.resolve(output, `${baseName}.html`);
+    .then(({ data }) => {
+      const result = replaceAssets(data, `${baseName}_files`);
+      assets = result.assets;
 
-      const [html, replacedPaths] = replaceAssets(response.data, baseName);
-      pathnames = replacedPaths;
-
-      return fs.writeFile(filepath, html);
+      return fs.writeFile(htmlFilePath, result.html);
     })
-    .then(() => fs.mkdir(assetsPath))
+    .then(() => !isEmpty(assets) && fs.mkdir(assetsPath))
     .then(() => {
-      const urls = pathnames.map((pathname) => url.resolve(target, pathname));
-      const promises = urls.map((assetUrl) => axios.get(assetUrl));
-
-      return Promise.all(promises);
-    })
-    .then((responses) => {
-      const promises = responses.map((response) => {
-        const filepath = path.join(assetsPath, makeAssetName(response.request.options.pathname));
-        // console.log(filepath);
-        return fs.writeFile(filepath, response.data);
-      });
+      const promises = assets.map((asset) => axios
+        .get(url.resolve(target, asset), { responseType: 'arraybuffer' })
+        .then(({ data }) => fs.writeFile(path.join(assetsPath, makeAssetName(asset)), data)));
 
       return Promise.all(promises);
     });

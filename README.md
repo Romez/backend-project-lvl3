@@ -13,6 +13,7 @@
 
 * Save page localy: `page-loader http://hexlet.io/courses -o /var/tmp`
 
+### Step 1
 [![asciicast](https://asciinema.org/a/269803.svg)](https://asciinema.org/a/269803)
 
 ### Test runnig
