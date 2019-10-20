@@ -5,6 +5,7 @@ import axios from 'axios';
 import { trim, flow, isEmpty } from 'lodash';
 import cheerio from 'cheerio';
 import debug from 'debug';
+import Listr from 'listr';
 
 const log = debug('page-loader');
 
@@ -57,27 +58,44 @@ const replaceAssets = (html, assetsPath) => {
 };
 
 export default (target, output) => {
-  const baseName = makePageFilename(target);
-  const htmlFilePath = path.resolve(output, `${baseName}.html`);
-  const assetsPath = path.join(output, `${baseName}_files`);
-  let assets = [];
+  const task = new Listr([
+    {
+      title: target,
+      task: () => {
+        const baseName = makePageFilename(target);
+        const htmlFilePath = path.resolve(output, `${baseName}.html`);
+        const assetsPath = path.join(output, `${baseName}_files`);
+        let assets = [];
 
-  return axios
-    .get(target)
-    .catch(({ message, code }) => { throw new Error(`${target} ${message} ${code}`); })
-    .then(({ data }) => {
-      const result = replaceAssets(data, `${baseName}_files`);
-      assets = result.assets;
+        return axios
+          .get(target)
+          .catch(({ message, code }) => {
+            throw new Error(`${target} ${message} ${code}`);
+          })
+          .then(({ data }) => {
+            const result = replaceAssets(data, `${baseName}_files`);
+            assets = result.assets;
 
-      log('htmlFilePath: %s', htmlFilePath);
-      return fs.writeFile(htmlFilePath, result.html);
-    })
-    .then(() => !isEmpty(assets) && fs.mkdir(assetsPath))
-    .then(() => {
-      const promises = assets.map((asset) => axios
-        .get(url.resolve(target, asset), { responseType: 'arraybuffer' })
-        .then(({ data }) => fs.writeFile(path.join(assetsPath, makeAssetName(asset)), data)));
+            log('htmlFilePath: %s', htmlFilePath);
+            return fs.writeFile(htmlFilePath, result.html);
+          })
+          .then(() => !isEmpty(assets) && fs.mkdir(assetsPath))
+          .then(() => {
+            const tasks = assets.map((asset) => {
+              const assetUrl = url.resolve(target, asset);
+              const assetPath = path.join(assetsPath, makeAssetName(asset));
 
-      return Promise.all(promises);
-    });
+              return {
+                title: assetUrl,
+                task: () => axios.get(assetUrl, { responseType: 'arraybuffer' }).then(({ data }) => fs.writeFile(assetPath, data)),
+              };
+            });
+
+            return new Listr(tasks, { concurrent: true });
+          });
+      },
+    },
+  ]);
+
+  return task.run();
 };
