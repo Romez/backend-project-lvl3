@@ -4,6 +4,9 @@ import url from 'url';
 import axios from 'axios';
 import { trim, flow, isEmpty } from 'lodash';
 import cheerio from 'cheerio';
+import debug from 'debug';
+
+const log = debug('page-loader');
 
 export const makePageFilename = flow(
   url.parse,
@@ -42,6 +45,8 @@ const replaceAssets = (html, assetsPath) => {
       }
 
       const newValue = path.join(assetsPath, makeAssetName(oldValue));
+      log('oldAsset: %s', oldValue);
+      log('newAsset: %s', newValue);
 
       $(el).attr(attrubute, newValue);
 
@@ -63,6 +68,7 @@ export default (target, output) => {
       const result = replaceAssets(data, `${baseName}_files`);
       assets = result.assets;
 
+      log('htmlFilePath: %s', htmlFilePath);
       return fs.writeFile(htmlFilePath, result.html);
     })
     .then(() => !isEmpty(assets) && fs.mkdir(assetsPath))
