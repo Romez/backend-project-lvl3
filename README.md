@@ -16,6 +16,9 @@
 ### Step 1
 [![asciicast](https://asciinema.org/a/269803.svg)](https://asciinema.org/a/269803)
 
+### Step 2
+[![asciicast](https://asciinema.org/a/275821.svg)](https://asciinema.org/a/275821)
+
 ### Test runnig
 `make test`
 
