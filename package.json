@@ -1,6 +1,6 @@
 {
   "name": "@romezzz/page-loader",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Loads html page into a local directory",
   "main": "dest/index.js",
   "bin": {

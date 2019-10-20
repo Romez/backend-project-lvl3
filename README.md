@@ -21,3 +21,6 @@
 
 ### Step 3
 [![asciicast](https://asciinema.org/a/275834.svg)](https://asciinema.org/a/275834)
+
+### Step 4
+[![asciicast](https://asciinema.org/a/275881.svg)](https://asciinema.org/a/275881)
