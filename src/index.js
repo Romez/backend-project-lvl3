@@ -26,7 +26,7 @@ const makeAssetName = (target) => {
 };
 
 const isLocal = (target) => {
-  const reg = new RegExp('(?:^[a-z][a-z0-9+.-]*:|//)', 'i');
+  const reg = new RegExp('^((https?|data):|//)', 'i');
   return !reg.test(target);
 };
 
@@ -34,15 +34,16 @@ const attributes = { link: 'href', img: 'src', script: 'src' };
 
 const replaceAssets = (html, assetsPath) => {
   const $ = cheerio.load(html);
+  let assets = [];
 
-  const assets = $('img, link, script')
+  $('img, link, script')
     .toArray()
-    .reduce((acc, el) => {
+    .forEach((el) => {
       const attrubute = attributes[el.name];
       const oldValue = el.attribs[attrubute];
 
       if (!oldValue || !isLocal(oldValue)) {
-        return acc;
+        return;
       }
 
       const newValue = path.join(assetsPath, makeAssetName(oldValue));
@@ -51,7 +52,7 @@ const replaceAssets = (html, assetsPath) => {
 
       $(el).attr(attrubute, newValue);
 
-      return acc.concat(oldValue);
+      assets = assets.concat(oldValue);
     }, []);
 
   return { html: $.html(), assets };
